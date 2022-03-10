@@ -5,3 +5,6 @@ rtl/cortexm0ds_logic.v
 rtl/RealTankSoCBusMtx
 rtl/APB
 rtl/UART
+rtl/verilog_APB*
+matlab
+td

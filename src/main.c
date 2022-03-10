@@ -15,11 +15,17 @@ uint16_t x,nx;
 int main()
 {
         SPI_Sent(0x043420,24);
+		Delay(300);
 		SPI_Sent(0x28bb85,24);
+		Delay(300);
 		SPI_Sent(0x21A8B2,24);
-		SPI_Sent(0x00c0A1,24);
+		Delay(300);
+		SPI_Sent(0x00c141,24);
+		Delay(300);
 		SPI_Sent(0x200016,24);
+		Delay(300);
 		SPI_Sent(0x00FA03,24);
+	while(1);
     return 0;
 }
 

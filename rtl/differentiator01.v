@@ -23,6 +23,7 @@ always @(posedge clk or negedge rstn) begin
         begin
             XI1 <= XI0;
             XI0 <= X - 10'd512 ;
+
         end
         else if(channel==3'b100)
         begin
@@ -38,8 +39,7 @@ end
 assign temp1 = XI0*XQ1;
 assign temp2 = XQ0*XI1;
 assign temp3 = temp2 - temp1;
-assign temp4 = temp3[19:10] <<< 2 ;
-assign out = temp4 + 10'd512;
+assign out = temp3[19:10] + 10'd512;
 
 
 

@@ -898,8 +898,14 @@ wire [3:0]  RAMDATA_WRITE;
 //------------------------------------------------------------------------------
 
     wire SCK;
+    reg [5:0] spi_cnt;
 
-    assign SPI_CLK = ~SCK;
+    assign SPI_CLK = (spi_cnt==6'd24)?1'b0:SCK;
+    always @(negedge SCK or negedge RSTn) begin
+        if(~RSTn) spi_cnt <= 1'b0;
+        else if(spi_cnt==6'd24) spi_cnt <= 6'd0;
+        else spi_cnt <= spi_cnt+1'b1;
+    end
 
     apb_spi_master
     #(
@@ -935,96 +941,98 @@ wire [3:0]  RAMDATA_WRITE;
         .spi_sdi2   (SPI_SDI[2]),
         .spi_sdi3   (SPI_SDI[3])
     );
-//------------------------------------------------------------------------------
-// ADC
-//------------------------------------------------------------------------------
-    wire ADC_clk;
-    reg [2:0] channel;
-    wire [11:0] data;
-    wire eoc;
-
-    always @(posedge eoc or negedge RSTn) begin
-        if(~RSTn)
-        channel <= 3'b100;
-        else if(channel == 3'b110)
-            channel <= 3'b100;
+  //------------------------------------------------------------------------------
+  // ADC
+  //------------------------------------------------------------------------------
+      wire ADC_clk;
+      reg [2:0] channel;
+      wire [11:0] data;
+      wire eoc;
+  
+      always @(posedge clk or negedge RSTn) begin
+          if(~RSTn)
+          channel <= 3'd4;
+          else if(eoc)
+            if(channel==3'd6)
+              channel <= 3'd4;
             else
-            channel <= 3'b110;
-
-
-    end
-    ADC ADC(
-        .eoc(eoc),
-        .dout(data),
-        .clk(ADC_clk),
-        .pd(1'b0),
-        .s(channel),
-        .soc(pwm_start)
-    );
-
- //   //rom
- //   reg [9:0] xaddr;
- //   (*ram_style="block"*)reg [9:0] xi[999:0],xq[999:0];
- //   initial begin
- //       $readmemh("C:/code/SDR_Pad/src/xi.txt",xi);
- //       $readmemh("C:/code/SDR_Pad/src/xq.txt",xq);
- //   end
- //   reg eoc_2;
- //   always @(posedge ADC_clk or negedge RSTn) begin
- //       if(~RSTn) begin
- //           xaddr <= 0;
- //           eoc_2 <= 0;
- //       end
- //       else if(eoc & eoc_2) begin
- //           if(xaddr == 10'd999) xaddr <= 1'b0;
- //           else begin
- //               xaddr <= xaddr + 1'b1;
- //               eoc_2 <= 1'b0;
- //           end
- //       end
- //           else if(eoc) eoc_2 <= 1'b1;
- //   end 
-
-
-//------------------------------------------------------------------------------
-// PLL
-//------------------------------------------------------------------------------
-    wire CW_clk; //synthesis keep;
-    PLL PLL(
-    .refclk(clk),
-    .reset(1'b0),
-    .stdby(1'b0),
-    .extlock(clk_lock),
-    .clk0_out(CW_clk),
-    .clk1_out(ADC_clk),
-    .clk2_out(REF)
-    );
-
-//------------------------------------------------------------------------------
-// PWM
-//------------------------------------------------------------------------------
-    wire val_req;
-    wire [9:0] data_diff;
-    pwm pwm(
-        .clk(clk),
-        .rst_n(RSTn),
-        .dac_val(data_diff),
-        .val_req(val_req),
-        .pwm_out(speaker_out)
-    );
-
-//------------------------------------------------------------------------------
-// differentiator
-//------------------------------------------------------------------------------
-    
-    differentiator differentiator(
-        .clk(ADC_clk),
-        .rstn(RSTn),
-        .en(eoc),
-        .channel(channel),
-        .X(data[11:2]),
-        .out(data_diff)
-    );
-
+              channel <= 3'd6;
+  
+  
+      end
+      ADC ADC(
+          .eoc(eoc),
+          .dout(data),
+          .clk(ADC_clk),
+          .pd(1'b0),
+          .s(channel),
+          .soc(pwm_start)
+      );
+  
+   //   //rom
+   //   reg [9:0] xaddr;
+   //   (*ram_style="block"*)reg [9:0] xi[999:0],xq[999:0];
+   //   initial begin
+   //       $readmemh("C:/Users/Spica/Desktop/jichuang/SDR/src/xi.txt",xi);
+   //       $readmemh("C:/Users/Spica/Desktop/jichuang/SDR/src/xq.txt",xq);
+   //   end
+   //   reg eoc_2;
+   //   always @(posedge ADC_clk or negedge RSTn) begin
+   //       if(~RSTn) begin
+   //           xaddr <= 0;
+   //           eoc_2 <= 0;
+   //       end
+   //       else if(eoc & eoc_2) begin
+   //           if(xaddr == 10'd999) xaddr <= 1'b0;
+   //           else begin
+   //               xaddr <= xaddr + 1'b1;
+   //               eoc_2 <= 1'b0;
+   //           end
+   //       end
+   //           else if(eoc) eoc_2 <= 1'b1;
+   //   end 
+  
+  
+  //------------------------------------------------------------------------------
+  // PLL
+  //------------------------------------------------------------------------------
+      wire CW_clk; //synthesis keep;
+      PLL PLL(
+      .refclk(clk),
+      .reset(1'b0),
+      .stdby(1'b0),
+      .extlock(clk_lock),
+      .clk0_out(CW_clk),
+      .clk1_out(ADC_clk),
+      .clk2_out(REF)
+      );
+  
+  //------------------------------------------------------------------------------
+  // PWM
+  //------------------------------------------------------------------------------
+      wire val_req;
+      wire [9:0] data_diff;
+      pwm pwm(
+          .clk(clk),
+          .rst_n(RSTn),
+          .dac_val(data_diff),
+          .val_req(val_req),
+          .pwm_out(speaker_out)
+      );
+  
+  //------------------------------------------------------------------------------
+  // differentiator
+  //------------------------------------------------------------------------------
+      
+      differentiator differentiator(
+          
+          .clk(ADC_clk),
+          .rstn(RSTn),
+          .en(eoc),
+          .channel(channel),
+          .X(data[11:2]),
+          .out(data_diff)
+      );
+  
 
 endmodule
